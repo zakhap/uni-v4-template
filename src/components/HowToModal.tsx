@@ -83,7 +83,7 @@ export const HowToModal = ({ isOpen, onClose }: HowToModalProps) => {
           >
             <h3 className="font-bold text-lg sm:text-xl mb-2 text-white">The Choice:</h3>
             <p className="text-white/80 text-sm sm:text-base">
-              Will you buy the token to make it happy? Or sell it to make it angry?
+              Will you buy the token to make it happy, or sell it to make it angry?
             </p>
           </div>
 
