@@ -489,6 +489,8 @@ const SwapComponent = ({}) => {
 
   return (
     <div className="space-y-2 sm:space-y-3">
+      <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">{isBuying ? "Buy" : "Sell"} $CONTENT</h2>
+
       {/* Trade Type Toggle */}
       <div className="flex gap-1 bg-white/5 p-0.5 rounded-lg">
         <button

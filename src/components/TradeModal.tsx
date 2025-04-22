@@ -55,8 +55,6 @@ export const TradeModal = ({ isOpen, onClose }: TradeModalProps) => {
         >
           ✕
         </button>
-
-        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Trade Contentment Coin</h2>
         
         <div className="space-y-4">
           {/* Swap Component */}
