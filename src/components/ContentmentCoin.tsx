@@ -66,7 +66,7 @@ export const ContentmentCoin: React.FC = () => {
       </div>
       
       <div className="flex flex-col items-center space-y-3 mt-2">
-        <p className="text-center text-gray-600 font-medium">CURRENT MOOD: {currentMood?.toUpperCase()} {currentMood && currentMood !== 'Content' && timeUntilContent !== null && `(${formatTimeRemaining(timeUntilContent)})`}</p>
+        <p className="text-center text-gray-500 font-medium">CURRENT MOOD: {currentMood?.toUpperCase()} {currentMood && currentMood !== 'Content' && timeUntilContent !== null && `(${formatTimeRemaining(timeUntilContent)})`}</p>
         
         <button
           onClick={() => setIsTradeModalOpen(true)}
