@@ -1,5 +1,5 @@
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { HowToModal } from './HowToModal';
 import Image from 'next/image';
 import { useMood } from '../contexts/MoodContext';
@@ -10,14 +10,71 @@ import {
   CONTENT_BORDER,
   HAPPY_COLOR,
   HAPPY_BORDER,
-  CONTENTMENT_COIN_ADDRESS
+  CONTENTMENT_COIN_ADDRESS,
+  STATE_VIEW_ADDRESS
 } from '../lib/constants';
 import { toId, getPoolKey } from "../lib/onchain/uniswap";
-
-
+import { useEthPrice } from '../contexts/EthPriceContext';
+import { publicClient } from '../lib/onchain/provider';
+import { STATE_VIEW_ABI } from '../lib/abi';
+import { formatEther } from 'viem';
 export const Header = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { currentMood, loading } = useMood();
+  const [price, setPrice] = useState<string | null>(null);
+  const { ethPrice } = useEthPrice();
+
+  useEffect(() => {
+    const fetchPrice = async () => {
+      try {
+        const poolKey = getPoolKey();
+        const poolId = toId(poolKey);
+        const result = await publicClient.readContract({
+          address: STATE_VIEW_ADDRESS,
+          abi: STATE_VIEW_ABI,
+          functionName: 'getSlot0',
+          args: [poolId]
+        });
+
+        const [sqrtPriceX96] = result as [bigint];
+        
+        // Calculate price from sqrtPriceX96
+        // price = (Q192 * (10 ** decimals)) / (sqrtPriceX96 * sqrtPriceX96)
+        // Q192 = 2**192
+        const Q192 = 2 ** 192;
+        const DECIMALS = 18;
+        const pricePerToken = (BigInt(Q192) * (10n ** BigInt(DECIMALS))) / (BigInt(sqrtPriceX96) * BigInt(sqrtPriceX96));
+        
+        // Calculate market cap in ETH
+        // Total supply is 1 billion tokens with 18 decimals
+        const TOTAL_SUPPLY = 1_000_000_000n * (10n ** 18n);
+        
+        // Calculate market cap in ETH
+        const marketCap = (pricePerToken * TOTAL_SUPPLY) / (10n ** 18n);
+        
+        // Convert to USD if ETH price is available
+        const marketCapEth = Number(formatEther(marketCap));
+        if (ethPrice) {
+          const marketCapUsd = marketCapEth * ethPrice;
+          setPrice(`$${marketCapUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}`);
+        } else {
+          setPrice(`${marketCapEth.toFixed(2)} ETH`);
+        }
+      } catch (error) {
+        console.error('Error fetching price:', error);
+        setPrice(null);
+      }
+    };
+
+    // Fetch immediately
+    fetchPrice();
+
+    // Then fetch every 5 seconds
+    const interval = setInterval(fetchPrice, 5000);
+
+    // Cleanup interval on unmount or when selectedSpawn changes
+    return () => clearInterval(interval);
+  }, [ethPrice]);
   
   // Determine background and border colors based on mood
   let backgroundColor = CONTENT_COLOR;
@@ -80,6 +137,14 @@ export const Header = () => {
           >
             View Chart
           </button>
+          <button
+            className={`py-1.5 sm:py-2 text-xs sm:text-base rounded-md transition-colors font-medium backdrop-blur-sm w-full sm:w-auto`}
+            style={{
+              color: borderColor,
+            }}
+          >
+            MC: {price}
+          </button>
         </div>
         <div className="flex items-center">
           <ConnectButton.Custom>
@@ -105,7 +170,7 @@ export const Header = () => {
                       return (
                         <button
                           onClick={openConnectModal}
-                          className="w-full px-3 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-base text-white rounded-md transition-colors font-medium backdrop-blur-sm"
+                          className="w-full px-3 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-base text-white rounded-md transition-colors font-medium cursor-pointer backdrop-blur-sm"
                           style={{
                             backgroundColor: backgroundColor,
                             borderColor: borderColor,
@@ -120,7 +185,7 @@ export const Header = () => {
                       return (
                         <button
                           onClick={openChainModal}
-                          className="px-3 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-base text-white rounded-md transition-colors font-medium backdrop-blur-sm w-full bg-red-500/70 hover:bg-red-500/80"
+                          className="px-3 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-base text-white rounded-md transition-colors font-medium backdrop-blur-sm cursor-pointer w-full bg-red-500/70 hover:bg-red-500/80"
                         >
                           Wrong Network
                         </button>
@@ -130,7 +195,7 @@ export const Header = () => {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={openChainModal}
-                          className="flex items-center gap-2 px-3 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-base text-white rounded-md transition-colors font-medium backdrop-blur-sm"
+                          className="flex cursor-pointer items-center gap-2 px-3 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-base text-white rounded-md transition-colors font-medium backdrop-blur-sm"
                           style={{
                             backgroundColor: backgroundColor,
                             borderColor: borderColor,
@@ -156,7 +221,7 @@ export const Header = () => {
                             borderColor: borderColor,
                             boxShadow: `0 1px 3px ${borderColor}40`
                           }}
-                          className="px-3 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-base text-white rounded-md transition-colors font-medium backdrop-blur-sm"
+                          className="px-3 cursor-pointer sm:px-6 py-1.5 sm:py-2 text-xs sm:text-base text-white rounded-md transition-colors font-medium backdrop-blur-sm"
                         >
                           {account.displayName}
                         </button>

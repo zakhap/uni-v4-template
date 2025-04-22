@@ -74,3 +74,18 @@ export const CONTENTMENT_COIN_ABI = [
     type: "function",
   },
 ];
+
+export const STATE_VIEW_ABI = [
+  {
+    inputs: [{ name: 'poolId', type: 'bytes32' }],
+    name: 'getSlot0',
+    outputs: [
+      { name: 'sqrtPriceX96', type: 'uint160' },
+      { name: 'tick', type: 'int24' },
+      { name: 'protocolFee', type: 'uint24' },
+      { name: 'lpFee', type: 'uint24' }
+    ],
+    stateMutability: 'view',
+    type: 'function'
+  }
+];
