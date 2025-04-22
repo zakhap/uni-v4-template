@@ -34,7 +34,7 @@ export const Layout = ({ children }: LayoutProps) => {
         <link rel="icon" href={faviconPath} />
         <meta
           name="description"
-          content="TODO"
+          content="A contentcoin/conceptcoin/memecoin demonstrating a better way to reward creators."
         />
 
         {/* Open Graph / Social Media */}
@@ -42,14 +42,14 @@ export const Layout = ({ children }: LayoutProps) => {
         <meta property="og:title" content="Contentmentcoin" />
         <meta
           property="og:description"
-          content="TODO"
+          content="A contentcoin/conceptcoin/memecoin demonstrating a better way to reward creators."
         />
         <meta property="og:image" content={imageUrl} />
         <meta property="og:url" content={siteUrl} />
 
         {/* X (Twitter) Card */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:description" content="TODO" />
+        <meta name="twitter:description" content="A contentcoin/conceptcoin/memecoin demonstrating a better way to reward creators." />
         <meta name="twitter:image" content={imageUrl} />
         <meta name="twitter:image:alt" content="Contentmentcoin" />
       </Head>
