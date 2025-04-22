@@ -137,14 +137,16 @@ export const Header = () => {
           >
             View Chart
           </button>
-          <button
-            className={`py-1.5 sm:py-2 text-xs sm:text-base rounded-md transition-colors font-medium backdrop-blur-sm w-full sm:w-auto`}
-            style={{
-              color: borderColor,
-            }}
-          >
-            MC: {price}
-          </button>
+          {price && (
+            <button
+              className={`py-1.5 sm:py-2 text-xs sm:text-base rounded-md transition-colors font-medium backdrop-blur-sm w-full sm:w-auto`}
+              style={{
+                color: borderColor,
+              }}
+            >
+              MC: {price}
+            </button>
+          )}
         </div>
         <div className="flex items-center">
           <ConnectButton.Custom>
