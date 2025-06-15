@@ -1,67 +1,16 @@
-import { useContext, useState, useEffect } from "react";
+import { useContext, useState, useEffect, useMemo } from "react";
 import { UserContext } from "../providers/UserProvider";
 import { getWalletClient, publicClient } from "../lib/onchain/provider";
-import { parseEther, formatEther } from "viem";
+import { formatEther } from "viem";
 import { useAccount } from "wagmi";
-import { UNIVERSAL_ROUTER_ADDRESS, PERMIT2_ADDRESS, V4_QUOTER_ADDRESS, CONTENTMENT_COIN_ADDRESS, CONTENTMENT_HOOK_ADDRESS } from "../lib/uniswap-v4/contracts/addresses";
+import { CONTENTMENT_COIN_ADDRESS } from "../lib/uniswap-v4/contracts/addresses";
 import { ANGER_COLOR, ANGER_BORDER, CONTENT_COLOR, CONTENT_BORDER, HAPPY_COLOR, HAPPY_BORDER } from "../lib/constants";
-import { encodeBuyData, encodeSellData, getPoolKey } from "../lib/onchain/uniswap";
-import { ERC20_ABI } from "../lib/uniswap-v4/contracts/abis";
 import { showSwapToast } from './Toasts';
 import { useMood } from '../contexts/MoodContext';
 
-// Permit2 ABI for nonce function
-const PERMIT2_ABI = [
-  {
-    inputs: [
-      { internalType: "address", name: "owner", type: "address" },
-      { internalType: "address", name: "token", type: "address" },
-      { internalType: "address", name: "spender", type: "address" }
-    ],
-    name: "allowance",
-    outputs: [
-      { internalType: "uint160", name: "amount", type: "uint160" },
-      { internalType: "uint48", name: "expiration", type: "uint48" },
-      { internalType: "uint48", name: "nonce", type: "uint48" }
-    ],
-    stateMutability: "view",
-    type: "function"
-  }
-];
-
-const V4_QUOTER_ABI = [
-  {
-    inputs: [
-      {
-        components: [
-          {
-            components: [
-              { name: "currency0", type: "address" },
-              { name: "currency1", type: "address" },
-              { name: "fee", type: "uint24" },
-              { name: "tickSpacing", type: "int24" },
-              { name: "hooks", type: "address" }
-            ],
-            name: "poolKey",
-            type: "tuple"
-          },
-          { name: "zeroForOne", type: "bool" },
-          { name: "exactAmount", type: "uint128" },
-          { name: "hookData", type: "bytes" }
-        ],
-        name: "params",
-        type: "tuple"
-      }
-    ],
-    name: "quoteExactInputSingle",
-    outputs: [
-      { name: "amountOut", type: "uint256" },
-      { name: "gasEstimate", type: "uint256" }
-    ],
-    stateMutability: "nonpayable",
-    type: "function"
-  }
-];
+// Import the new managers
+import { SwapManager } from "../lib/uniswap-v4/core/SwapManager";
+import { QuoteManager } from "../lib/uniswap-v4/core/QuoteManager";
 
 const SwapComponent = ({}) => {
   const { address } = useAccount();
@@ -72,6 +21,10 @@ const SwapComponent = ({}) => {
   const [isSwapping, setIsSwapping] = useState(false);
   const [isBuying, setIsBuying] = useState(true);
   const [expectedOutput, setExpectedOutput] = useState(null);
+
+  // Initialize managers
+  const swapManager = useMemo(() => new SwapManager(publicClient), []);
+  const quoteManager = useMemo(() => new QuoteManager(publicClient), []);
 
   // Determine background and border colors based on mood
   let backgroundColor = CONTENT_COLOR;
@@ -84,8 +37,6 @@ const SwapComponent = ({}) => {
     backgroundColor = ANGER_COLOR;
     borderColor = ANGER_BORDER;
   }
-
-  const poolKey = getPoolKey();
 
   const handleInputChange = (e) => {
     const value = e.target.value;
@@ -100,23 +51,8 @@ const SwapComponent = ({}) => {
     }
 
     try {
-      const exactAmountInWei = parseEther(value);
-      console.log("Pool key:", poolKey);
-      const result = await publicClient.simulateContract({
-        address: V4_QUOTER_ADDRESS,
-        abi: V4_QUOTER_ABI,
-        functionName: 'quoteExactInputSingle',
-        args: [{
-          poolKey: poolKey,
-          zeroForOne: isBuying,
-          exactAmount: exactAmountInWei,
-          hookData: "0x"
-        }]
-      });
-            
-      // Store the raw BigInt amount
-      const [amountOut] = result.result;
-      setExpectedOutput(amountOut);
+      const quote = await quoteManager.getSwapQuote(value, isBuying);
+      setExpectedOutput(quote?.amountOut || null);
     } catch (error) {
       console.error('Error simulating swap:', error);
       setExpectedOutput(null);
@@ -127,7 +63,7 @@ const SwapComponent = ({}) => {
     if (!inputValue || Number(inputValue) <= 0) return;
     
     setIsSwapping(true);
-    const toastId = showSwapToast({
+    showSwapToast({
       type: 'loading',
       amount: inputValue,
       symbol: "CONTENT",
@@ -138,105 +74,47 @@ const SwapComponent = ({}) => {
       const walletClient = await getWalletClient();
       if (!walletClient) throw new Error("No wallet connected");
 
-      const currentChain = await walletClient.getChainId();
-      if (currentChain !== 8453) {
-        showSwapToast({
-          type: 'error',
-          message: 'Please switch to the Base network'
-        });
-        return;
-      }
+      // Set wallet client for the swap manager
+      swapManager.setWalletClient(walletClient);
 
       // Calculate minimum amount out with 10% slippage
       const minAmountOut = expectedOutput 
-        ? expectedOutput * BigInt(9) / BigInt(10)  // Calculate 90% of the BigInt value
+        ? expectedOutput * BigInt(9) / BigInt(10)
         : BigInt(0);
 
-      // Get swap data for buying CONTENT token with ETH
-      const { commands, inputs, value } = encodeBuyData(CONTENTMENT_COIN_ADDRESS, inputValue, minAmountOut);
+      const swapParams = {
+        tokenAddress: CONTENTMENT_COIN_ADDRESS,
+        amountIn: inputValue,
+        minAmountOut,
+        isBuying: true,
+        slippagePercent: 10
+      };
 
-      // First simulate the transaction to catch any errors early
       showSwapToast({
         type: 'loading',
         message: 'Calculating gas needed...',
         duration: Infinity
       });
 
-      // Calculate gas estimate with simulation
-      const gasEstimate = await publicClient.estimateContractGas({
-        address: UNIVERSAL_ROUTER_ADDRESS,
-        abi: [
-          {
-            inputs: [
-              { internalType: "bytes", name: "commands", type: "bytes" },
-              { internalType: "bytes[]", name: "inputs", type: "bytes[]" },
-              { internalType: "uint256", name: "deadline", type: "uint256" }
-            ],
-            name: "execute",
-            outputs: [],
-            stateMutability: "payable",
-            type: "function"
-          }
-        ],
-        functionName: "execute",
-        args: [
-          commands,
-          inputs,
-          BigInt(Math.floor(Date.now() / 1000) + 1800) // 30 min deadline
-        ],
-        value,
-        account: address
-      });
-
-      // Add a 30% buffer to the gas estimate to be safe
-      const gasLimit = gasEstimate * BigInt(130) / BigInt(100);
-
-      // Execute swap through Universal Router with the calculated gas limit
       showSwapToast({
         type: 'loading',
         message: 'Submitting transaction...',
         duration: Infinity
       });
 
-      const hash = await walletClient.writeContract({
-        address: UNIVERSAL_ROUTER_ADDRESS,
-        abi: [
-          {
-            inputs: [
-              { internalType: "bytes", name: "commands", type: "bytes" },
-              { internalType: "bytes[]", name: "inputs", type: "bytes[]" },
-              { internalType: "uint256", name: "deadline", type: "uint256" }
-            ],
-            name: "execute",
-            outputs: [],
-            stateMutability: "payable",
-            type: "function"
-          }
-        ],
-        functionName: "execute",
-        args: [
-          commands,
-          inputs,
-          BigInt(Math.floor(Date.now() / 1000) + 1800) // 30 min deadline
-        ],
-        gas: gasLimit, // Use our buffered gas estimate
-        value,
-      });
-      
-      // Wait for transaction confirmation
-      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+      const result = await swapManager.executeSwap(swapParams, address);
 
-      if (receipt.status === "success") {
+      if (result.success) {
         showSwapToast({
           type: 'buy',
           amount: inputValue,
           symbol: "CONTENT",
-          txHash: hash
+          txHash: result.hash
         });
         setInputValue("");
         setExpectedOutput(null);
       } else {
-        throw new Error("Transaction failed");
+        throw new Error(result.error || "Transaction failed");
       }
     } catch (error) {
       console.error("Error buying tokens:", error);
@@ -258,64 +136,13 @@ const SwapComponent = ({}) => {
       const walletClient = await getWalletClient();
       if (!walletClient) throw new Error("No wallet connected");
 
-      const currentChain = await walletClient.getChainId();
-      if (currentChain !== 8453) {
-        showSwapToast({
-          type: 'error',
-          message: 'Please switch to the Base network'
-        });
-        return;
-      }
+      // Set wallet client for the swap manager
+      swapManager.setWalletClient(walletClient);
 
-      // Get current nonce from Permit2 contract
-      const [, , nonce] = await publicClient.readContract({
-        address: PERMIT2_ADDRESS,
-        abi: PERMIT2_ABI,
-        functionName: "allowance",
-        args: [address, CONTENTMENT_COIN_ADDRESS, UNIVERSAL_ROUTER_ADDRESS],
-      });
-
-      // Sign Universal Router permission
       showSwapToast({
         type: 'loading',
         message: 'Please grant permission for swap...',
         duration: Infinity
-      });
-
-      const deadline = BigInt(Math.floor(Date.now() / 1000) + 600); // 10 minutes
-      
-      const permitMessage = {
-        details: {
-          token: CONTENTMENT_COIN_ADDRESS,
-          amount: parseEther(inputValue),
-          expiration: deadline,
-          nonce,
-        },
-        spender: UNIVERSAL_ROUTER_ADDRESS,
-        sigDeadline: deadline,
-      };
-
-      const signature = await walletClient.signTypedData({
-        domain: {
-          name: 'Permit2',
-          chainId: 8453, // Base chain ID
-          verifyingContract: PERMIT2_ADDRESS,
-        },
-        types: {
-          PermitSingle: [
-            { name: 'details', type: 'PermitDetails' },
-            { name: 'spender', type: 'address' },
-            { name: 'sigDeadline', type: 'uint256' },
-          ],
-          PermitDetails: [
-            { name: 'token', type: 'address' },
-            { name: 'amount', type: 'uint160' },
-            { name: 'expiration', type: 'uint48' },
-            { name: 'nonce', type: 'uint48' },
-          ],
-        },
-        primaryType: 'PermitSingle',
-        message: permitMessage,
       });
 
       // Calculate minimum amount out with 10% slippage
@@ -323,159 +150,39 @@ const SwapComponent = ({}) => {
         ? expectedOutput * BigInt(9) / BigInt(10)
         : BigInt(0);
 
-      // Get swap data for selling token for ETH
-      const { commands, inputs, value } = encodeSellData(CONTENTMENT_COIN_ADDRESS, inputValue, {
-        signature,
-        details: {
-          token: CONTENTMENT_COIN_ADDRESS,
-          amount: parseEther(inputValue),
-          expiration: Number(deadline),
-          nonce: Number(nonce)
-        },
-        sigDeadline: deadline
-      }, minAmountOut);
+      const swapParams = {
+        tokenAddress: CONTENTMENT_COIN_ADDRESS,
+        amountIn: inputValue,
+        minAmountOut,
+        isBuying: false,
+        slippagePercent: 10
+      };
 
-      // First calculate gas estimate
       showSwapToast({
         type: 'loading',
         message: 'Calculating gas needed...',
         duration: Infinity
       });
 
-      try {
-        // Calculate gas estimate with simulation
-        const gasEstimate = await publicClient.estimateContractGas({
-          address: UNIVERSAL_ROUTER_ADDRESS,
-          abi: [
-            {
-              inputs: [
-                { internalType: "bytes", name: "commands", type: "bytes" },
-                { internalType: "bytes[]", name: "inputs", type: "bytes[]" },
-                { internalType: "uint256", name: "deadline", type: "uint256" }
-              ],
-              name: "execute",
-              outputs: [],
-              stateMutability: "payable",
-              type: "function"
-            }
-          ],
-          functionName: "execute",
-          args: [
-            commands,
-            inputs,
-            BigInt(Math.floor(Date.now() / 1000) + 1800) // 30 min deadline
-          ],
-          value,
-          account: address
-        });
+      showSwapToast({
+        type: 'loading',
+        message: 'Submitting transaction...',
+        duration: Infinity
+      });
 
-        // Add a 30% buffer to the gas estimate to be safe
-        const gasLimit = gasEstimate * BigInt(130) / BigInt(100);
-        console.log(`Gas estimated: ${gasEstimate}, with buffer: ${gasLimit}`);
+      const result = await swapManager.executeSwap(swapParams, address);
 
-        // Execute swap through Universal Router with the calculated gas limit
+      if (result.success) {
         showSwapToast({
-          type: 'loading',
-          message: 'Submitting transaction...',
-          duration: Infinity
+          type: 'sell',
+          amount: inputValue,
+          symbol: "CONTENT",
+          txHash: result.hash
         });
-
-        const hash = await walletClient.writeContract({
-          address: UNIVERSAL_ROUTER_ADDRESS,
-          abi: [
-            {
-              inputs: [
-                { internalType: "bytes", name: "commands", type: "bytes" },
-                { internalType: "bytes[]", name: "inputs", type: "bytes[]" },
-                { internalType: "uint256", name: "deadline", type: "uint256" }
-              ],
-              name: "execute",
-              outputs: [],
-              stateMutability: "payable",
-              type: "function"
-            }
-          ],
-          functionName: "execute",
-          args: [
-            commands,
-            inputs,
-            BigInt(Math.floor(Date.now() / 1000) + 1800) // 30 min deadline
-          ],
-          gas: gasLimit, // Use our buffered gas estimate
-          value,
-        });
-
-        // Wait for transaction confirmation
-        const receipt = await publicClient.waitForTransactionReceipt({ hash });
-
-        if (receipt.status === "success") {
-          showSwapToast({
-            type: 'sell',
-            amount: inputValue,
-            symbol: "CONTENT",
-            txHash: hash
-          });
-          setInputValue("");
-          setExpectedOutput(null);
-        } else {
-          throw new Error("Transaction failed");
-        }
-      } catch (estimationError) {
-        console.error("Gas estimation failed:", estimationError);
-        
-        // If gas estimation fails, try with a very high fixed gas limit as fallback
-        showSwapToast({
-          type: 'loading',
-          message: 'Gas estimation failed, using high gas limit...',
-          duration: Infinity
-        });
-        
-        // Hardcoded high gas limit as fallback (3 million gas)
-        const highGasLimit = BigInt(3000000);
-        
-        const hash = await walletClient.writeContract({
-          address: UNIVERSAL_ROUTER_ADDRESS,
-          abi: [
-            {
-              inputs: [
-                { internalType: "bytes", name: "commands", type: "bytes" },
-                { internalType: "bytes[]", name: "inputs", type: "bytes[]" },
-                { internalType: "uint256", name: "deadline", type: "uint256" }
-              ],
-              name: "execute",
-              outputs: [],
-              stateMutability: "payable",
-              type: "function"
-            }
-          ],
-          functionName: "execute",
-          args: [
-            commands,
-            inputs,
-            BigInt(Math.floor(Date.now() / 1000) + 1800) // 30 min deadline
-          ],
-          gas: highGasLimit, // Use high gas limit
-          value,
-        });
-        
-        console.log("Sell transaction with fixed gas limit:", hash);
-        
-        // Wait for transaction confirmation
-        const receipt = await publicClient.waitForTransactionReceipt({ hash });
-        console.log("Sell receipt with fixed gas limit:", receipt);
-        
-        if (receipt.status === "success") {
-          showSwapToast({
-            type: 'sell',
-            amount: inputValue,
-            symbol: "CONTENT",
-            txHash: hash
-          });
-          setInputValue("");
-          setExpectedOutput(null);
-        } else {
-          throw new Error("Transaction failed even with high gas limit");
-        }
+        setInputValue("");
+        setExpectedOutput(null);
+      } else {
+        throw new Error(result.error || "Transaction failed");
       }
     } catch (error) {
       console.error("Error selling tokens:", error);
@@ -603,4 +310,4 @@ const SwapComponent = ({}) => {
   );
 };
 
-export default SwapComponent; 
+export default SwapComponent;
