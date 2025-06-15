@@ -5,27 +5,8 @@
 import { encodeAbiParameters, encodePacked, parseEther, keccak256 } from "viem";
 import { V4_SWAP, PERMIT2_PERMIT, Actions } from "../contracts/commands";
 import { UNIVERSAL_ROUTER_ADDRESS } from "../contracts/addresses";
-
-// Pool key type definition
-export interface PoolKey {
-  currency0: `0x${string}`;
-  currency1: `0x${string}`;
-  fee: number;
-  tickSpacing: number;
-  hooks: `0x${string}`;
-}
-
-// Permit data type definition
-export interface PermitData {
-  signature: `0x${string}`;
-  details: {
-    token: `0x${string}`;
-    amount: bigint;
-    expiration: number;
-    nonce: number;
-  };
-  sigDeadline: bigint;
-}
+import { PoolKey } from "../types/pool";
+import { PermitData } from "../types/swap";
 
 /**
  * Encodes Universal Router commands for buying (ETH -> Token)

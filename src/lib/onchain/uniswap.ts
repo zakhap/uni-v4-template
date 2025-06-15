@@ -10,12 +10,12 @@ import {
   encodeRouterInputs,
   encodePermit2Data,
   encodePoolId,
-  type PoolKey,
-  type PermitData
 } from "../uniswap-v4/utils/encoding";
 import { parseAmount, getSwapDirection } from "../uniswap-v4/utils/calculations";
+import { PoolKey } from "../uniswap-v4/types/pool";
+import { PermitData, SwapData } from "../uniswap-v4/types/swap";
 
-export function encodeBuyData(contractAddress: string, amountIn: string, minAmountOut: bigint = BigInt(0)) {
+export function encodeBuyData(contractAddress: string, amountIn: string, minAmountOut: bigint = BigInt(0)): SwapData {
   console.log("Contract address:", contractAddress);
   
   const poolKey = getPoolKey();
@@ -47,18 +47,9 @@ export function encodeBuyData(contractAddress: string, amountIn: string, minAmou
 export function encodeSellData(
   contractAddress: string,
   amountIn: string,
-  permit: {
-    signature: `0x${string}`,
-    details: {
-      token: `0x${string}`,
-      amount: bigint,
-      expiration: number,
-      nonce: number
-    },
-    sigDeadline: bigint
-  },
+  permit: PermitData,
   minAmountOut: bigint = BigInt(0)
-) {
+): SwapData {
   const poolKey = getPoolKey();
   const parsedAmountIn = parseAmount(amountIn);
   const zeroForOne = getSwapDirection(false); // false for selling (Token -> ETH)
@@ -66,7 +57,7 @@ export function encodeSellData(
   // Encode all components using utility functions
   const commands = encodeSellCommands();
   const actions = encodeSwapActions();
-  const permitInputs = encodePermit2Data(permit as PermitData);
+  const permitInputs = encodePermit2Data(permit);
   const swapParams = encodeSwapParams(poolKey, zeroForOne, amountIn, minAmountOut);
   const settleParams = encodeSettleParams(poolKey.currency1, parsedAmountIn);
   const takeParams = encodeTakeParams(poolKey.currency0, BigInt(0));

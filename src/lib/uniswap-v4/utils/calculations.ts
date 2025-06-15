@@ -3,6 +3,7 @@
  */
 
 import { parseEther } from "viem";
+import { TradeType } from "../types/swap";
 
 /**
  * Calculates minimum amount out with slippage protection
@@ -55,6 +56,15 @@ export function getSwapDirection(isBuying: boolean): boolean {
   // For ETH->Token: zeroForOne = true (ETH is currency0)
   // For Token->ETH: zeroForOne = false (ETH is currency0)
   return isBuying;
+}
+
+/**
+ * Determines swap direction based on TradeType enum
+ * @param tradeType - Trade type enum value
+ * @returns zeroForOne boolean for Uniswap V4 swap direction
+ */
+export function getSwapDirectionFromTradeType(tradeType: TradeType): boolean {
+  return tradeType === TradeType.BUY;
 }
 
 /**
