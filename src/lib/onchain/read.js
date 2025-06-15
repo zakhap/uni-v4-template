@@ -1,5 +1,5 @@
 import { publicClient } from "./provider";
-import { ERC20_ABI } from "../uniswap-v4/contracts/abis";
+import { ERC20_ABI } from "../uniswap-v4";
 
 export async function getTokenBalance(tokenAddress, userAddress) {
   try {

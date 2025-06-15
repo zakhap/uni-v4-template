@@ -1,14 +1,17 @@
 import { useState, useCallback } from "react";
 import { formatEther } from "viem";
-import { CONTENTMENT_COIN_ADDRESS } from "../lib/uniswap-v4/contracts/addresses";
 import { ANGER_COLOR, ANGER_BORDER, CONTENT_COLOR, CONTENT_BORDER, HAPPY_COLOR, HAPPY_BORDER } from "../lib/constants";
 import { showSwapToast } from './Toasts';
 import { useMood } from '../contexts/MoodContext';
 
-// Import the new hooks
-import { useSwap } from "../lib/uniswap-v4/hooks/useSwap";
-import { useQuote } from "../lib/uniswap-v4/hooks/useQuote";
-import { useEthBalance, useTokenBalance } from "../lib/uniswap-v4/hooks/useBalance";
+// Import from the unified Uniswap V4 library
+import { 
+  useSwap, 
+  useQuote, 
+  useEthBalance, 
+  useTokenBalance,
+  CONTENTMENT_COIN_ADDRESS 
+} from "../lib/uniswap-v4";
 
 const SwapComponent = ({}) => {
   const { currentMood } = useMood();

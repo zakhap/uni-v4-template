@@ -1,6 +1,7 @@
 import { parseEther } from "viem";
-import { CONTENTMENT_HOOK_ADDRESS, CONTENTMENT_COIN_ADDRESS } from "../uniswap-v4/contracts/addresses";
 import {
+  CONTENTMENT_HOOK_ADDRESS,
+  CONTENTMENT_COIN_ADDRESS,
   encodeBuyCommands,
   encodeSellCommands,
   encodeSwapActions,
@@ -10,10 +11,12 @@ import {
   encodeRouterInputs,
   encodePermit2Data,
   encodePoolId,
-} from "../uniswap-v4/utils/encoding";
-import { parseAmount, getSwapDirection } from "../uniswap-v4/utils/calculations";
-import { PoolKey } from "../uniswap-v4/types/pool";
-import { PermitData, SwapData } from "../uniswap-v4/types/swap";
+  parseAmount,
+  getSwapDirection,
+  type PoolKey,
+  type PermitData,
+  type SwapData
+} from "../uniswap-v4";
 
 export function encodeBuyData(contractAddress: string, amountIn: string, minAmountOut: bigint = BigInt(0)): SwapData {
   console.log("Contract address:", contractAddress);
