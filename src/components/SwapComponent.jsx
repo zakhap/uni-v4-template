@@ -1,30 +1,54 @@
-import { useContext, useState, useEffect, useMemo } from "react";
-import { UserContext } from "../providers/UserProvider";
-import { getWalletClient, publicClient } from "../lib/onchain/provider";
+import { useState, useCallback } from "react";
 import { formatEther } from "viem";
-import { useAccount } from "wagmi";
 import { CONTENTMENT_COIN_ADDRESS } from "../lib/uniswap-v4/contracts/addresses";
 import { ANGER_COLOR, ANGER_BORDER, CONTENT_COLOR, CONTENT_BORDER, HAPPY_COLOR, HAPPY_BORDER } from "../lib/constants";
 import { showSwapToast } from './Toasts';
 import { useMood } from '../contexts/MoodContext';
 
-// Import the new managers
-import { SwapManager } from "../lib/uniswap-v4/core/SwapManager";
-import { QuoteManager } from "../lib/uniswap-v4/core/QuoteManager";
+// Import the new hooks
+import { useSwap } from "../lib/uniswap-v4/hooks/useSwap";
+import { useQuote } from "../lib/uniswap-v4/hooks/useQuote";
+import { useEthBalance, useTokenBalance } from "../lib/uniswap-v4/hooks/useBalance";
 
 const SwapComponent = ({}) => {
-  const { address } = useAccount();
-  const { ethBalance, tokenBalance } = useContext(UserContext);
   const { currentMood } = useMood();
 
   const [inputValue, setInputValue] = useState("");
-  const [isSwapping, setIsSwapping] = useState(false);
   const [isBuying, setIsBuying] = useState(true);
-  const [expectedOutput, setExpectedOutput] = useState(null);
 
-  // Initialize managers
-  const swapManager = useMemo(() => new SwapManager(publicClient), []);
-  const quoteManager = useMemo(() => new QuoteManager(publicClient), []);
+  // Use the new hooks
+  const { quote, isLoading: isQuoting } = useQuote(inputValue, isBuying, {
+    enabled: !!inputValue && Number(inputValue) > 0
+  });
+
+  const ethBalance = useEthBalance();
+  const tokenBalance = useTokenBalance(CONTENTMENT_COIN_ADDRESS);
+
+  const { executeSwap, isSwapping } = useSwap({
+    onSwapStart: (params) => {
+      showSwapToast({
+        type: 'loading',
+        amount: params.amountIn,
+        symbol: "CONTENT",
+        message: `Swapping ${params.amountIn} ${params.isBuying ? 'ETH' : 'CONTENT'}...`
+      });
+    },
+    onSwapSuccess: (result) => {
+      showSwapToast({
+        type: isBuying ? 'buy' : 'sell',
+        amount: inputValue,
+        symbol: "CONTENT",
+        txHash: result.hash
+      });
+      setInputValue("");
+    },
+    onSwapError: (error) => {
+      showSwapToast({
+        type: 'error',
+        message: `Failed to swap: ${error}`
+      });
+    }
+  });
 
   // Determine background and border colors based on mood
   let backgroundColor = CONTENT_COLOR;
@@ -39,161 +63,47 @@ const SwapComponent = ({}) => {
   }
 
   const handleInputChange = (e) => {
-    const value = e.target.value;
-    setInputValue(value);
-    simulateSwap(value);
+    setInputValue(e.target.value);
   };
 
-  const simulateSwap = async (value) => {
-    if (!value || Number(value) <= 0) {
-      setExpectedOutput(null);
-      return;
-    }
-
-    try {
-      const quote = await quoteManager.getSwapQuote(value, isBuying);
-      setExpectedOutput(quote?.amountOut || null);
-    } catch (error) {
-      console.error('Error simulating swap:', error);
-      setExpectedOutput(null);
-    }
-  };
-
-  const handleBuy = async () => {
+  const handleSwap = useCallback(async () => {
     if (!inputValue || Number(inputValue) <= 0) return;
-    
-    setIsSwapping(true);
+
+    // Calculate minimum amount out with 10% slippage
+    const minAmountOut = quote?.amountOut 
+      ? quote.amountOut * BigInt(9) / BigInt(10)
+      : BigInt(0);
+
+    const swapParams = {
+      tokenAddress: CONTENTMENT_COIN_ADDRESS,
+      amountIn: inputValue,
+      minAmountOut,
+      isBuying,
+      slippagePercent: 10
+    };
+
     showSwapToast({
       type: 'loading',
-      amount: inputValue,
-      symbol: "CONTENT",
-      message: `Swapping ${inputValue} ETH for CONTENT...`
+      message: 'Calculating gas needed...',
+      duration: Infinity
     });
 
-    try {
-      const walletClient = await getWalletClient();
-      if (!walletClient) throw new Error("No wallet connected");
+    showSwapToast({
+      type: 'loading',
+      message: 'Submitting transaction...',
+      duration: Infinity
+    });
 
-      // Set wallet client for the swap manager
-      swapManager.setWalletClient(walletClient);
+    await executeSwap(swapParams);
+  }, [inputValue, quote, isBuying, executeSwap]);
 
-      // Calculate minimum amount out with 10% slippage
-      const minAmountOut = expectedOutput 
-        ? expectedOutput * BigInt(9) / BigInt(10)
-        : BigInt(0);
+  // Get the current balance based on trade direction
+  const currentBalance = isBuying ? ethBalance : tokenBalance;
+  const balanceSymbol = isBuying ? "Ξ" : " CONTENT";
 
-      const swapParams = {
-        tokenAddress: CONTENTMENT_COIN_ADDRESS,
-        amountIn: inputValue,
-        minAmountOut,
-        isBuying: true,
-        slippagePercent: 10
-      };
-
-      showSwapToast({
-        type: 'loading',
-        message: 'Calculating gas needed...',
-        duration: Infinity
-      });
-
-      showSwapToast({
-        type: 'loading',
-        message: 'Submitting transaction...',
-        duration: Infinity
-      });
-
-      const result = await swapManager.executeSwap(swapParams, address);
-
-      if (result.success) {
-        showSwapToast({
-          type: 'buy',
-          amount: inputValue,
-          symbol: "CONTENT",
-          txHash: result.hash
-        });
-        setInputValue("");
-        setExpectedOutput(null);
-      } else {
-        throw new Error(result.error || "Transaction failed");
-      }
-    } catch (error) {
-      console.error("Error buying tokens:", error);
-      showSwapToast({
-        type: 'error',
-        message: `Failed to swap: ${error.message || 'Unknown error'}`
-      });
-    } finally {
-      setIsSwapping(false);
-    }
-  };
-
-  const handleSell = async () => {
-    if (!inputValue || Number(inputValue) <= 0) return;
-    
-    setIsSwapping(true);
-
-    try {
-      const walletClient = await getWalletClient();
-      if (!walletClient) throw new Error("No wallet connected");
-
-      // Set wallet client for the swap manager
-      swapManager.setWalletClient(walletClient);
-
-      showSwapToast({
-        type: 'loading',
-        message: 'Please grant permission for swap...',
-        duration: Infinity
-      });
-
-      // Calculate minimum amount out with 10% slippage
-      const minAmountOut = expectedOutput 
-        ? expectedOutput * BigInt(9) / BigInt(10)
-        : BigInt(0);
-
-      const swapParams = {
-        tokenAddress: CONTENTMENT_COIN_ADDRESS,
-        amountIn: inputValue,
-        minAmountOut,
-        isBuying: false,
-        slippagePercent: 10
-      };
-
-      showSwapToast({
-        type: 'loading',
-        message: 'Calculating gas needed...',
-        duration: Infinity
-      });
-
-      showSwapToast({
-        type: 'loading',
-        message: 'Submitting transaction...',
-        duration: Infinity
-      });
-
-      const result = await swapManager.executeSwap(swapParams, address);
-
-      if (result.success) {
-        showSwapToast({
-          type: 'sell',
-          amount: inputValue,
-          symbol: "CONTENT",
-          txHash: result.hash
-        });
-        setInputValue("");
-        setExpectedOutput(null);
-      } else {
-        throw new Error(result.error || "Transaction failed");
-      }
-    } catch (error) {
-      console.error("Error selling tokens:", error);
-      showSwapToast({
-        type: 'error',
-        message: `Failed to swap: ${error.message || 'Unknown error'}`
-      });
-    } finally {
-      setIsSwapping(false);
-    }
-  };
+  // Check if user has insufficient balance
+  const hasInsufficientBalance = inputValue && Number(inputValue) > 0 && 
+    Number(inputValue) > Number(currentBalance.formattedBalance);
 
   return (
     <div className="space-y-2 sm:space-y-3">
@@ -205,7 +115,6 @@ const SwapComponent = ({}) => {
           onClick={() => {
             setIsBuying(true);
             setInputValue("");
-            setExpectedOutput(null);
           }}
           className={`flex-1 cursor-pointer py-1.5 rounded-md transition-all duration-200 text-[10px] sm:text-xs ${
             isBuying 
@@ -219,7 +128,6 @@ const SwapComponent = ({}) => {
           onClick={() => {
             setIsBuying(false);
             setInputValue("");
-            setExpectedOutput(null);
           }}
           className={`flex-1 cursor-pointer py-1.5 rounded-md transition-all duration-200 text-[10px] sm:text-xs ${
             !isBuying 
@@ -236,10 +144,7 @@ const SwapComponent = ({}) => {
         <div className="flex justify-between items-center text-[10px] sm:text-xs">
           <span className="text-white/60">Amount</span>
           <span className="text-white/60">
-            Balance: {isBuying 
-              ? `${Number(ethBalance).toFixed(4)}Ξ`
-              : `${Number(tokenBalance).toFixed(0)} CONTENT`
-            }
+            Balance: {currentBalance.isLoading ? '...' : `${currentBalance.formattedBalance}${balanceSymbol}`}
           </span>
         </div>
         
@@ -251,7 +156,6 @@ const SwapComponent = ({}) => {
               placeholder="0.0"
               min="0"
               step="0.01"
-              max={isBuying ? ethBalance : tokenBalance}
               value={inputValue}
               onChange={handleInputChange}
               className="bg-transparent outline-none w-full text-white text-xs sm:text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -268,10 +172,11 @@ const SwapComponent = ({}) => {
               placeholder="0.0"
               disabled
               value={
-                expectedOutput
+                isQuoting ? "..." :
+                quote?.amountOut
                   ? isBuying 
-                    ? Math.ceil(Number(formatEther(expectedOutput))).toString()
-                    : Number(formatEther(expectedOutput)).toPrecision(3).toString()
+                    ? Math.ceil(Number(formatEther(quote.amountOut))).toString()
+                    : Number(formatEther(quote.amountOut)).toPrecision(3).toString()
                   : ""
               }
               className="bg-transparent outline-none w-full text-white/60 text-xs sm:text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -285,12 +190,13 @@ const SwapComponent = ({}) => {
 
       {/* Swap Button */}
       <button 
-        onClick={isBuying ? handleBuy : handleSell}
+        onClick={handleSwap}
         disabled={
           isSwapping || 
           !inputValue || 
           Number(inputValue) <= 0 || 
-          Number(inputValue) > Number(isBuying ? ethBalance : tokenBalance)
+          hasInsufficientBalance ||
+          currentBalance.isLoading
         }
         style={{
           backgroundColor: backgroundColor,
@@ -301,9 +207,11 @@ const SwapComponent = ({}) => {
       >
         {isSwapping 
           ? "Swapping..." 
-          : Number(inputValue) > Number(isBuying ? ethBalance : tokenBalance)
-            ? "Insufficient balance"
-            : isBuying ? "Buy" : "Sell"
+          : currentBalance.isLoading
+            ? "Loading balance..."
+            : hasInsufficientBalance
+              ? "Insufficient balance"
+              : isBuying ? "Buy" : "Sell"
         }
       </button>
     </div>
