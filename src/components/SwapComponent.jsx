@@ -3,9 +3,10 @@ import { UserContext } from "../providers/UserProvider";
 import { getWalletClient, publicClient } from "../lib/onchain/provider";
 import { parseEther, formatEther } from "viem";
 import { useAccount } from "wagmi";
-import { UNIVERSAL_ROUTER_ADDRESS, PERMIT2_ADDRESS, V4_QUOTER_ADDRESS, CONTENTMENT_COIN_ADDRESS, CONTENTMENT_HOOK_ADDRESS, ANGER_COLOR, ANGER_BORDER, CONTENT_COLOR, CONTENT_BORDER, HAPPY_COLOR, HAPPY_BORDER } from "../lib/constants";
+import { UNIVERSAL_ROUTER_ADDRESS, PERMIT2_ADDRESS, V4_QUOTER_ADDRESS, CONTENTMENT_COIN_ADDRESS, CONTENTMENT_HOOK_ADDRESS } from "../lib/uniswap-v4/contracts/addresses";
+import { ANGER_COLOR, ANGER_BORDER, CONTENT_COLOR, CONTENT_BORDER, HAPPY_COLOR, HAPPY_BORDER } from "../lib/constants";
 import { encodeBuyData, encodeSellData, getPoolKey } from "../lib/onchain/uniswap";
-import { ERC20_ABI } from "../lib/abi";
+import { ERC20_ABI } from "../lib/uniswap-v4/contracts/abis";
 import { showSwapToast } from './Toasts';
 import { useMood } from '../contexts/MoodContext';
 

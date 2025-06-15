@@ -1,5 +1,6 @@
 import { encodeAbiParameters, encodePacked, parseEther, keccak256 } from "viem";
-import { V4_SWAP, PERMIT2_PERMIT, Actions, UNIVERSAL_ROUTER_ADDRESS, CONTENTMENT_HOOK_ADDRESS, CONTENTMENT_COIN_ADDRESS } from "../constants";
+import { V4_SWAP, PERMIT2_PERMIT, Actions } from "../uniswap-v4/contracts/commands";
+import { UNIVERSAL_ROUTER_ADDRESS, CONTENTMENT_HOOK_ADDRESS, CONTENTMENT_COIN_ADDRESS } from "../uniswap-v4/contracts/addresses";
 
 export function encodeBuyData(contractAddress: string, amountIn: string, minAmountOut: bigint = BigInt(0)) {
   // Encode the Universal Router command for buying (ETH -> Spawn)
