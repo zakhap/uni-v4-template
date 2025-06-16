@@ -1,7 +1,6 @@
 import { parseEther } from "viem";
 import {
-  CONTENTMENT_HOOK_ADDRESS,
-  CONTENTMENT_COIN_ADDRESS,
+  USDC_ADDRESS,
   encodeBuyCommands,
   encodeSellCommands,
   encodeSwapActions,
@@ -17,6 +16,7 @@ import {
   type PermitData,
   type SwapData
 } from "../uniswap-v4";
+import { POOL_FEE } from "../constants";
 
 export function encodeBuyData(contractAddress: string, amountIn: string, minAmountOut: bigint = BigInt(0)): SwapData {
   console.log("Contract address:", contractAddress);
@@ -77,10 +77,10 @@ export function encodeSellData(
 export function getPoolKey(): PoolKey {
   return {
     currency0: '0x0000000000000000000000000000000000000000', // ETH
-    currency1: CONTENTMENT_COIN_ADDRESS,
-    fee: 0, // 0%
+    currency1: USDC_ADDRESS,
+    fee: POOL_FEE, // 3000 (0.3%)
     tickSpacing: 60,
-    hooks: CONTENTMENT_HOOK_ADDRESS
+    hooks: '0x0000000000000000000000000000000000000000' // No hooks for basic ETH/USDC pool
   } as const;
 }
 

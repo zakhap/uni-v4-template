@@ -1,10 +1,11 @@
 import type { NextPage } from 'next';
 import { Layout } from '../components/Layout';
-import { ContentmentCoin } from '../components/ContentmentCoin';
+import { TradingInterface } from '../components/TradingInterface';
+
 const Home: NextPage = () => {
   return (
     <Layout>
-      <ContentmentCoin />
+      <TradingInterface />
     </Layout>
   );
 };

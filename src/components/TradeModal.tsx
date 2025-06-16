@@ -1,13 +1,3 @@
-import { useMood } from '../contexts/MoodContext';
-import {
-  ANGER_COLOR,
-  ANGER_BORDER,
-  CONTENT_COLOR,
-  CONTENT_BORDER,
-  HAPPY_COLOR,
-  HAPPY_BORDER,
-  CONTENTMENT_COIN_ADDRESS
-} from '../lib/constants';
 import SwapComponent from './SwapComponent';
 
 interface TradeModalProps {
@@ -16,19 +6,9 @@ interface TradeModalProps {
 }
 
 export const TradeModal = ({ isOpen, onClose }: TradeModalProps) => {
-  const { currentMood } = useMood();
-  
-  // Determine background and border colors based on mood
-  let backgroundColor = CONTENT_COLOR;
-  let borderColor = CONTENT_BORDER;
-  
-  if (currentMood === 'Happy') {
-    backgroundColor = HAPPY_COLOR;
-    borderColor = HAPPY_BORDER;
-  } else if (currentMood === 'Angry') {
-    backgroundColor = ANGER_COLOR;
-    borderColor = ANGER_BORDER;
-  }
+  // Use neutral colors
+  const backgroundColor = '#3B82F6'; // blue-600
+  const borderColor = '#2563EB'; // blue-700
 
   if (!isOpen) return null;
 

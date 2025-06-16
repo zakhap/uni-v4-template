@@ -1,12 +1,3 @@
-import { useMood } from '../contexts/MoodContext';
-import {
-  ANGER_COLOR,
-  ANGER_BORDER,
-  CONTENT_COLOR,
-  CONTENT_BORDER,
-  HAPPY_COLOR,
-  HAPPY_BORDER
-} from '../lib/constants';
 
 interface HowToModalProps {
   isOpen: boolean;
@@ -14,19 +5,9 @@ interface HowToModalProps {
 }
 
 export const HowToModal = ({ isOpen, onClose }: HowToModalProps) => {
-  const { currentMood } = useMood();
-  
-  // Determine background and border colors based on mood
-  let backgroundColor = CONTENT_COLOR;
-  let borderColor = CONTENT_BORDER;
-  
-  if (currentMood === 'Happy') {
-    backgroundColor = HAPPY_COLOR;
-    borderColor = HAPPY_BORDER;
-  } else if (currentMood === 'Angry') {
-    backgroundColor = ANGER_COLOR;
-    borderColor = ANGER_BORDER;
-  }
+  // Use neutral colors
+  const backgroundColor = '#3B82F6'; // blue-600
+  const borderColor = '#2563EB'; // blue-700
   
   if (!isOpen) return null;
 
@@ -54,7 +35,7 @@ export const HowToModal = ({ isOpen, onClose }: HowToModalProps) => {
           ✕
         </button>
 
-        <h3 className="text-xl sm:text-3xl font-bold mb-4 sm:mb-6">Con·tent·ment: The state of being satisfied and happy.</h3>
+        <h3 className="text-xl sm:text-3xl font-bold mb-4 sm:mb-6">Uniswap V4 Demo</h3>
         
         <div className="space-y-6 text-white/90">
           <div 
@@ -66,11 +47,11 @@ export const HowToModal = ({ isOpen, onClose }: HowToModalProps) => {
           >
             <h3 className="font-bold text-lg sm:text-xl mb-2 text-white">How it works:</h3>
             <ul className="space-y-2 text-white/80 text-sm sm:text-base">
-              <li>- The token is happy when the last trade was a buy, angry when the last trade was a sell, and content when the token is not traded for a while</li>
-              <li>- Holding the ERC20 token will also give you an ERC1155 NFT displaying the current mood automatically</li>
-              <li>- This project also uses a custom Uniswap v4 hook that takes a variable creator fee based on trader profit</li>
-              <li>- Traders that make a profit pay a higher creator fee, and traders that lose money pay nothing (Linearly between 0% and 10% from 1x to 2x)</li>
-              <li>- This is a proof of concept to see if this is a better way to reward creators than the current model on launchpads like Zora/Clanker</li>
+              <li>- This is a demonstration of Uniswap V4 trading on Base network</li>
+              <li>- Trade between native ETH and USDC tokens</li>
+              <li>- Connect your wallet to get real-time price quotes</li>
+              <li>- All trades execute through Uniswap V4 protocol</li>
+              <li>- Includes slippage protection and transaction cost estimates</li>
             </ul>
           </div>
 
@@ -81,9 +62,9 @@ export const HowToModal = ({ isOpen, onClose }: HowToModalProps) => {
               borderColor: borderColor 
             }}
           >
-            <h3 className="font-bold text-lg sm:text-xl mb-2 text-white">The Choice:</h3>
+            <h3 className="font-bold text-lg sm:text-xl mb-2 text-white">Get Started:</h3>
             <p className="text-white/80 text-sm sm:text-base">
-              Will you buy the token to make it happy, or sell it to make it angry?
+              Click &quot;Start Trading&quot; to open the swap interface and begin trading ETH/USDC.
             </p>
           </div>
 

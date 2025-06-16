@@ -8,7 +8,6 @@ import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import { Toaster } from 'react-hot-toast';
 import { UserProvider } from '../providers/UserProvider';
 import { EthPriceProvider } from '../contexts/EthPriceContext';
-import { MoodProvider } from '../contexts/MoodContext';
 import { config } from '../wagmi';
 
 const queryClient = new QueryClient();
@@ -19,46 +18,44 @@ function MyApp({ Component, pageProps }: AppProps) {
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider>
           <EthPriceProvider>
-            <MoodProvider>
-              <UserProvider>
-                <Component {...pageProps} />
-                <Toaster 
-                  position="bottom-right"
-                    toastOptions={{
+            <UserProvider>
+              <Component {...pageProps} />
+              <Toaster 
+                position="bottom-right"
+                  toastOptions={{
+                    style: {
+                      background: 'transparent',
+                      padding: 0,
+                      margin: 0,
+                      boxShadow: 'none',
+                    },
+                    duration: 4000,
+                    loading: {
+                      style: {
+                        background: 'transparent',
+                        padding: 0,
+                        margin: 0,
+                        boxShadow: 'none',
+                      }
+                    },
+                    success: {
                       style: {
                         background: 'transparent',
                         padding: 0,
                         margin: 0,
                         boxShadow: 'none',
                       },
-                      duration: 4000,
-                      loading: {
-                        style: {
-                          background: 'transparent',
-                          padding: 0,
-                          margin: 0,
-                          boxShadow: 'none',
-                        }
+                      iconTheme: {
+                        primary: 'white',
+                        secondary: 'black',
                       },
-                      success: {
-                        style: {
-                          background: 'transparent',
-                          padding: 0,
-                          margin: 0,
-                          boxShadow: 'none',
-                        },
-                        iconTheme: {
-                          primary: 'white',
-                          secondary: 'black',
-                        },
-                      },
-                      className: 'border-none',
-                      icon: null,
-                      position: 'bottom-right'
-                    }}
-                  />
-              </UserProvider>
-            </MoodProvider>
+                    },
+                    className: 'border-none',
+                    icon: null,
+                    position: 'bottom-right'
+                  }}
+                />
+            </UserProvider>
           </EthPriceProvider>
         </RainbowKitProvider>
       </QueryClientProvider>

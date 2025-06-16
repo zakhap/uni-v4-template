@@ -1,57 +1,28 @@
 import Head from 'next/head';
 import { Header } from './Header';
-import { useMood } from '../contexts/MoodContext';
-import { useEffect, useState } from 'react';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 export const Layout = ({ children }: LayoutProps) => {
-  const siteUrl = 'https://contentment.fun';
-  const imageUrl = `${siteUrl}/images/main.png`;
-  const { currentMood } = useMood();
-  const [faviconPath, setFaviconPath] = useState('/images/content.png');
-  const [title, setTitle] = useState('Contentcoin');
-  // Update favicon when mood changes
-  useEffect(() => {
-    if (currentMood === 'Happy') {
-      setTitle('Happycoin');
-      setFaviconPath('/images/happy.png');
-    } else if (currentMood === 'Angry') {
-      setTitle('Angrycoin');
-      setFaviconPath('/images/angry.png');
-    } else {
-      setTitle('Contentmentcoin');
-      setFaviconPath('/images/content.png');
-    }
-  }, [currentMood]);
+  const title = 'UniV4 Demo';
+  const description = 'Trade ETH and USDC using Uniswap V4 on Base network';
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
       <Head>
         <title>{title}</title>
-        <link rel="icon" href={faviconPath} />
-        <meta
-          name="description"
-          content="Will you buy the token to make it happy, or sell it to make it angry?"
-        />
-
+        <meta name="description" content={description} />
+        
         {/* Open Graph / Social Media */}
         <meta property="og:type" content="website" />
-        <meta property="og:title" content="Contentmentcoin" />
-        <meta
-          property="og:description"
-          content="Will you buy the token to make it happy, or sell it to make it angry?"
-        />
-        <meta property="og:image" content={imageUrl} />
-        <meta property="og:url" content={siteUrl} />
-
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={description} />
+        
         {/* X (Twitter) Card */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:description" content="Will you buy the token to make it happy, or sell it to make it angry?" />
-        <meta name="twitter:image" content={imageUrl} />
-        <meta name="twitter:image:alt" content="Contentmentcoin" />
+        <meta name="twitter:description" content={description} />
       </Head>
 
       {/* Make Header fixed and give it a background to avoid transparency issues */}

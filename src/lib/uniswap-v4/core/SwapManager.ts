@@ -4,7 +4,7 @@
 
 import { PublicClient, WalletClient, parseEther } from "viem";
 import { encodeBuyData, encodeSellData, getPoolKey } from "../../onchain/uniswap";
-import { UNIVERSAL_ROUTER_ADDRESS, PERMIT2_ADDRESS, CONTENTMENT_COIN_ADDRESS } from "../contracts/addresses";
+import { UNIVERSAL_ROUTER_ADDRESS, PERMIT2_ADDRESS, USDC_ADDRESS } from "../contracts/addresses";
 import { calculateMinAmountOut, calculateGasWithBuffer, createDeadline } from "../utils/calculations";
 import { 
   SwapParams, 
@@ -144,14 +144,14 @@ export class SwapManager {
         address: PERMIT2_ADDRESS,
         abi: PERMIT2_ABI,
         functionName: "allowance",
-        args: [userAddress, CONTENTMENT_COIN_ADDRESS, UNIVERSAL_ROUTER_ADDRESS],
+        args: [userAddress, USDC_ADDRESS, UNIVERSAL_ROUTER_ADDRESS],
       });
 
       // Create permit signature
       const deadline = createDeadline(10); // 10 minutes
       const permitMessage = {
         details: {
-          token: CONTENTMENT_COIN_ADDRESS,
+          token: USDC_ADDRESS,
           amount: parseEther(params.amountIn),
           expiration: deadline,
           nonce,
@@ -186,7 +186,7 @@ export class SwapManager {
       const permit: PermitData = {
         signature,
         details: {
-          token: CONTENTMENT_COIN_ADDRESS,
+          token: USDC_ADDRESS,
           amount: parseEther(params.amountIn),
           expiration: Number(deadline),
           nonce: Number(nonce)

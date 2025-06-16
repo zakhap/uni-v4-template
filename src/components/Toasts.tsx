@@ -1,10 +1,5 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { 
-  ANGER_COLOR, ANGER_BORDER, 
-  CONTENT_COLOR, CONTENT_BORDER, 
-  HAPPY_COLOR, HAPPY_BORDER 
-} from '../lib/constants';
 
 // Types for toast components
 interface SwapToastProps {
@@ -148,7 +143,7 @@ export const SpawnToast = ({ message, onDismiss }: SpawnToastProps) => {
   );
 };
 
-// New MoodToast component
+// New MoodToast component (simplified for demo)
 export const MoodToast = ({ mood, previousMood }: MoodToastProps) => {
   const [progress, setProgress] = useState(100);
   
@@ -169,37 +164,16 @@ export const MoodToast = ({ mood, previousMood }: MoodToastProps) => {
     requestAnimationFrame(updateProgress);
   }, []);
 
-  // Get style objects based on current mood
-  let style = {
-    background: 'rgba(0, 0, 0, 0.9)',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
+  const style = {
+    background: 'rgba(59, 130, 246, 0.8)', // blue-600 with 80% opacity
+    border: '1px solid #2563EB', // blue-700
   };
   
-  let progressBarStyle = {
+  const progressBarStyle = {
     width: `${progress}%`, 
     transition: 'width 100ms linear',
-    background: 'rgba(255, 255, 255, 0.2)',
+    background: 'rgba(37, 99, 235, 0.5)', // blue-700 with 50% opacity
   };
-
-  if (mood === 'Content') {
-    style = {
-      background: `${CONTENT_COLOR}CC`, // CC is ~80% opacity in hex
-      border: `1px solid ${CONTENT_BORDER}`,
-    };
-    progressBarStyle.background = `${CONTENT_BORDER}80`; // 80 is 50% opacity in hex
-  } else if (mood === 'Happy') {
-    style = {
-      background: `${HAPPY_COLOR}CC`,
-      border: `1px solid ${HAPPY_BORDER}`,
-    };
-    progressBarStyle.background = `${HAPPY_BORDER}80`;
-  } else if (mood === 'Angry') {
-    style = {
-      background: `${ANGER_COLOR}CC`,
-      border: `1px solid ${ANGER_BORDER}`,
-    };
-    progressBarStyle.background = `${ANGER_BORDER}80`;
-  }
 
   const baseClasses = "backdrop-blur-sm text-white rounded-lg shadow-2xl p-4 relative overflow-hidden";
 
@@ -212,16 +186,9 @@ export const MoodToast = ({ mood, previousMood }: MoodToastProps) => {
 
       <div className="flex items-center gap-2">
         <p className="text-sm font-medium">
-          {previousMood 
-            ? `Mood changed from ${previousMood} to ${mood}` 
-            : `Current mood is ${mood}`}
+          Trade completed successfully!
         </p>
-        {/* Emoji based on mood */}
-        <span>
-          {mood === 'Content' && '😌'}
-          {mood === 'Happy' && '😄'}
-          {mood === 'Angry' && '😠'}
-        </span>
+        <span>✅</span>
       </div>
     </div>
   );
@@ -249,10 +216,10 @@ export const showCopyToast = (props: CopyToastProps) => {
   toast.custom(() => <CopyToast {...props} />, { duration: 2000 });
 };
 
-// New helper function to show mood toast
+// Simplified helper function to show success toast
 export const showMoodToast = (props: MoodToastProps) => {
   toast.custom(() => <MoodToast {...props} />, { 
     duration: 3000,
-    id: 'mood-toast' 
+    id: 'success-toast' 
   });
 }; 

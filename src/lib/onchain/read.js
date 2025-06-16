@@ -30,30 +30,5 @@ export async function getEthBalance(userAddress) {
   }
 }
 
-export async function isNFTHolder(tokenAddress, userAddress) {
-  try {
-    const balance = await publicClient.readContract({
-      address: tokenAddress,
-      abi: [
-        {
-          inputs: [
-            { name: "account", type: "address" },
-            { name: "id", type: "uint256" }
-          ],
-          name: "balanceOf",
-          outputs: [{ name: "", type: "uint256" }],
-          stateMutability: "view",
-          type: "function"
-        }
-      ],
-      functionName: "balanceOf",
-      args: [userAddress, 1n],
-    });
-
-    return balance > 0;
-  } catch (error) {
-    console.error(`Error checking if user ${userAddress} is an NFT holder of ${tokenAddress}:`, error);
-    return false;
-  }
-}
+// Removed isNFTHolder function - not needed for ETH/USDC demo
 

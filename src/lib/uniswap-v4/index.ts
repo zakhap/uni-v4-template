@@ -67,17 +67,14 @@ export {
   V4_QUOTER_ADDRESS,
   POOL_MANAGER_ADDRESS,
   STATE_VIEW_ADDRESS,
-  CONTENTMENT_COIN_ADDRESS,
-  CONTENTMENT_HOOK_ADDRESS,
+  USDC_ADDRESS,
   ADDRESSES
 } from './contracts/addresses';
 
 export {
   // ABIs
   ERC20_ABI,
-  TOKEN_ABI,
-  STATE_VIEW_ABI,
-  CONTENTMENT_COIN_ABI
+  STATE_VIEW_ABI
 } from './contracts/abis';
 
 export {

@@ -27,38 +27,6 @@ export const ERC20_ABI = [
   },
 ] as const;
 
-// Token-specific ABI (keeping only non-mood related functions for library)
-export const TOKEN_ABI = [
-  {
-    inputs: [],
-    name: "loadingLiquidity",
-    outputs: [{ type: "bool", name: "" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "owner",
-    outputs: [{ type: "address", name: "" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "address", name: "account", type: "address" }],
-    name: "balanceOf",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "bool", name: "isBuy", type: "bool" }],
-    name: "logTrade",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-] as const;
-
 // Uniswap V4 State View ABI for pool data
 export const STATE_VIEW_ABI = [
   {
@@ -74,6 +42,3 @@ export const STATE_VIEW_ABI = [
     type: 'function'
   }
 ] as const;
-
-// Export legacy names for backward compatibility during migration
-export const CONTENTMENT_COIN_ABI = TOKEN_ABI;

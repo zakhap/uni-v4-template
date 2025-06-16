@@ -1,8 +1,8 @@
 import React, { createContext, useState, useEffect, useCallback } from "react";
-import { getEthBalance, getTokenBalance, isNFTHolder } from "../lib/onchain/read";
-import { formatEther } from "viem";
+import { getEthBalance, getTokenBalance } from "../lib/onchain/read";
+import { formatEther, formatUnits } from "viem";
 import { useAccount } from "wagmi";
-import { CONTENTMENT_COIN_ADDRESS } from "../lib/constants";
+import { USDC_ADDRESS } from "../lib/constants";
 
 export const UserContext = createContext();
 
@@ -11,7 +11,6 @@ export const UserProvider = ({ children }) => {
 
   const [ethBalance, setEthBalance] = useState("0");
   const [tokenBalance, setTokenBalance] = useState("0");
-  const [holdsNFT, setHoldsNFT] = useState(false);
   const [loading, setLoading] = useState(true);
   const [timeout, setTimeoutState] = useState(null);
 
@@ -32,12 +31,9 @@ export const UserProvider = ({ children }) => {
       const ethBalance = await getEthBalance(address);
       setEthBalance(formatEther(ethBalance));
 
-      const tokenBalance = await getTokenBalance(CONTENTMENT_COIN_ADDRESS, address);
-      setTokenBalance(formatEther(tokenBalance));
-
-      const holdsNFT = await isNFTHolder(CONTENTMENT_COIN_ADDRESS, address);
-      console.log("holdsNFT", holdsNFT);
-      setHoldsNFT(holdsNFT);
+      const tokenBalance = await getTokenBalance(USDC_ADDRESS, address);
+      // USDC has 6 decimals, not 18
+      setTokenBalance(formatUnits(tokenBalance, 6));
     } catch (error) {
       console.error("Error fetching user data:", error);
     } finally {

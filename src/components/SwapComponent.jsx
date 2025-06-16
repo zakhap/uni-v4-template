@@ -1,21 +1,18 @@
 import { useState, useCallback } from "react";
-import { formatEther } from "viem";
-import { ANGER_COLOR, ANGER_BORDER, CONTENT_COLOR, CONTENT_BORDER, HAPPY_COLOR, HAPPY_BORDER } from "../lib/constants";
+import { formatEther, formatUnits } from "viem";
 import { showSwapToast } from './Toasts';
-import { useMood } from '../contexts/MoodContext';
 
 // Import from the unified Uniswap V4 library
 import { 
   useSwap, 
   useQuote, 
   useEthBalance, 
-  useTokenBalance,
-  CONTENTMENT_COIN_ADDRESS 
+  useTokenBalance
 } from "../lib/uniswap-v4";
 
-const SwapComponent = ({}) => {
-  const { currentMood } = useMood();
+import { USDC_ADDRESS } from '../lib/constants';
 
+const SwapComponent = ({}) => {
   const [inputValue, setInputValue] = useState("");
   const [isBuying, setIsBuying] = useState(true);
 
@@ -25,22 +22,22 @@ const SwapComponent = ({}) => {
   });
 
   const ethBalance = useEthBalance();
-  const tokenBalance = useTokenBalance(CONTENTMENT_COIN_ADDRESS);
+  const tokenBalance = useTokenBalance(USDC_ADDRESS);
 
   const { executeSwap, isSwapping } = useSwap({
     onSwapStart: (params) => {
       showSwapToast({
         type: 'loading',
         amount: params.amountIn,
-        symbol: "CONTENT",
-        message: `Swapping ${params.amountIn} ${params.isBuying ? 'ETH' : 'CONTENT'}...`
+        symbol: "USDC",
+        message: `Swapping ${params.amountIn} ${params.isBuying ? 'ETH' : 'USDC'}...`
       });
     },
     onSwapSuccess: (result) => {
       showSwapToast({
         type: isBuying ? 'buy' : 'sell',
         amount: inputValue,
-        symbol: "CONTENT",
+        symbol: "USDC",
         txHash: result.hash
       });
       setInputValue("");
@@ -53,17 +50,9 @@ const SwapComponent = ({}) => {
     }
   });
 
-  // Determine background and border colors based on mood
-  let backgroundColor = CONTENT_COLOR;
-  let borderColor = CONTENT_BORDER;
-  
-  if (currentMood === 'Happy') {
-    backgroundColor = HAPPY_COLOR;
-    borderColor = HAPPY_BORDER;
-  } else if (currentMood === 'Angry') {
-    backgroundColor = ANGER_COLOR;
-    borderColor = ANGER_BORDER;
-  }
+  // Use neutral colors
+  const backgroundColor = '#3B82F6'; // blue-600
+  const borderColor = '#2563EB'; // blue-700
 
   const handleInputChange = (e) => {
     setInputValue(e.target.value);
@@ -78,7 +67,7 @@ const SwapComponent = ({}) => {
       : BigInt(0);
 
     const swapParams = {
-      tokenAddress: CONTENTMENT_COIN_ADDRESS,
+      tokenAddress: USDC_ADDRESS,
       amountIn: inputValue,
       minAmountOut,
       isBuying,
@@ -102,7 +91,7 @@ const SwapComponent = ({}) => {
 
   // Get the current balance based on trade direction
   const currentBalance = isBuying ? ethBalance : tokenBalance;
-  const balanceSymbol = isBuying ? "Ξ" : " CONTENT";
+  const balanceSymbol = isBuying ? "Ξ" : " USDC";
 
   // Check if user has insufficient balance
   const hasInsufficientBalance = inputValue && Number(inputValue) > 0 && 
@@ -110,7 +99,7 @@ const SwapComponent = ({}) => {
 
   return (
     <div className="space-y-2 sm:space-y-3">
-      <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">{isBuying ? "Buy" : "Sell"} $CONTENT</h2>
+      <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">{isBuying ? "Buy" : "Sell"} USDC</h2>
 
       {/* Trade Type Toggle */}
       <div className="flex gap-1 bg-white/5 p-0.5 rounded-lg">
@@ -164,7 +153,7 @@ const SwapComponent = ({}) => {
               className="bg-transparent outline-none w-full text-white text-xs sm:text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
             <span className="text-white/80 text-xs sm:text-sm">
-              {isBuying ? "ETH" : "CONTENT"}
+              {isBuying ? "ETH" : "USDC"}
             </span>
           </div>
 
@@ -178,14 +167,14 @@ const SwapComponent = ({}) => {
                 isQuoting ? "..." :
                 quote?.amountOut
                   ? isBuying 
-                    ? Math.ceil(Number(formatEther(quote.amountOut))).toString()
-                    : Number(formatEther(quote.amountOut)).toPrecision(3).toString()
+                    ? Number(formatUnits(quote.amountOut, 6)).toFixed(2)
+                    : Number(formatEther(quote.amountOut)).toPrecision(6)
                   : ""
               }
               className="bg-transparent outline-none w-full text-white/60 text-xs sm:text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
             <span className="text-white/80 text-xs sm:text-sm">
-              {!isBuying ? "ETH" : "CONTENT"}
+              {!isBuying ? "ETH" : "USDC"}
             </span>
           </div>
         </div>
