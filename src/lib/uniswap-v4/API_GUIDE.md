@@ -1,6 +1,6 @@
 # Uniswap V4 Library - Complete API Guide
 
-A comprehensive guide to using the Uniswap V4 library for seamless DEX integration on Base network.
+A comprehensive guide to using the Uniswap V4 library for ETH/USDC trading on Base network.
 
 ## Table of Contents
 
@@ -12,7 +12,6 @@ A comprehensive guide to using the Uniswap V4 library for seamless DEX integrati
 - [Contract Information](#contract-information)
 - [Error Handling](#error-handling)
 - [Best Practices](#best-practices)
-- [Migration Guide](#migration-guide)
 
 ## Quick Start
 
@@ -24,7 +23,7 @@ import {
   useSwap, 
   useQuote, 
   useEthBalance,
-  CONTENTMENT_COIN_ADDRESS 
+  USDC_ADDRESS 
 } from './lib/uniswap-v4';
 ```
 
@@ -38,7 +37,7 @@ import {
   useQuote, 
   useEthBalance, 
   useTokenBalance,
-  CONTENTMENT_COIN_ADDRESS 
+  USDC_ADDRESS 
 } from './lib/uniswap-v4';
 
 export function SwapWidget() {
@@ -50,7 +49,7 @@ export function SwapWidget() {
   
   // Balance tracking
   const ethBalance = useEthBalance();
-  const tokenBalance = useTokenBalance(CONTENTMENT_COIN_ADDRESS);
+  const tokenBalance = useTokenBalance(USDC_ADDRESS);
   
   // Swap execution
   const { executeSwap, isSwapping } = useSwap({
@@ -69,7 +68,7 @@ export function SwapWidget() {
       : BigInt(0);
 
     await executeSwap({
-      tokenAddress: CONTENTMENT_COIN_ADDRESS,
+      tokenAddress: USDC_ADDRESS,
       amountIn: amount,
       minAmountOut,
       isBuying,
@@ -191,7 +190,7 @@ await executeSwap({
 Specialized hook for ETH → Token swaps.
 
 ```typescript
-const { executeBuy, isSwapping } = useBuySwap(CONTENTMENT_COIN_ADDRESS, {
+const { executeBuy, isSwapping } = useBuySwap(USDC_ADDRESS, {
   onSwapSuccess: (result) => showToast('Buy successful!')
 });
 
@@ -203,7 +202,7 @@ await executeBuy('1.0', BigInt(900), 10); // amount, minOut, slippage%
 Specialized hook for Token → ETH swaps.
 
 ```typescript
-const { executeSell, isSwapping } = useSellSwap(CONTENTMENT_COIN_ADDRESS, {
+const { executeSell, isSwapping } = useSellSwap(USDC_ADDRESS, {
   onSwapSuccess: (result) => showToast('Sell successful!')
 });
 
@@ -299,7 +298,7 @@ console.log('ETH Balance:', formattedBalance); // "1.2345"
 Track ERC20 token balance.
 
 ```typescript
-const tokenBalance = useTokenBalance(CONTENTMENT_COIN_ADDRESS, {
+const tokenBalance = useTokenBalance(USDC_ADDRESS, {
   refreshInterval: 10000,
   decimals: 0, // Show whole tokens
   onBalanceUpdate: (balance) => console.log('New token balance:', balance)
@@ -312,7 +311,7 @@ Track multiple token balances simultaneously.
 
 ```typescript
 const { ethBalance, tokenBalances, isLoading, refetchAll } = useBalances([
-  CONTENTMENT_COIN_ADDRESS,
+  USDC_ADDRESS,
   '0xOtherTokenAddress'
 ], {
   refreshInterval: 15000
@@ -325,7 +324,7 @@ Check if user has sufficient balance for a transaction.
 
 ```typescript
 const { hasInsufficientBalance, balanceStatus } = useBalanceCheck(
-  CONTENTMENT_COIN_ADDRESS, 
+  USDC_ADDRESS, 
   '100'
 );
 
@@ -346,7 +345,7 @@ swapManager.setWalletClient(walletClient);
 
 // Execute a buy swap
 const result = await swapManager.executeBuySwap({
-  tokenAddress: CONTENTMENT_COIN_ADDRESS,
+  tokenAddress: USDC_ADDRESS,
   amountIn: '1.0',
   minAmountOut: BigInt(900),
   isBuying: true,
@@ -401,7 +400,7 @@ const txBuilder = new TransactionBuilder(publicClient);
 // Build a transaction without executing
 const transaction = await txBuilder.buildBuyTransaction(
   {
-    tokenAddress: CONTENTMENT_COIN_ADDRESS,
+    tokenAddress: USDC_ADDRESS,
     amountIn: '1.0',
     minAmountOut: BigInt(900),
     isBuying: true,
@@ -518,7 +517,7 @@ import {
   UNIVERSAL_ROUTER_ADDRESS,
   PERMIT2_ADDRESS,
   V4_QUOTER_ADDRESS,
-  CONTENTMENT_COIN_ADDRESS,
+  USDC_ADDRESS,
   ADDRESSES // Object with all addresses
 } from './lib/uniswap-v4';
 
@@ -665,7 +664,7 @@ function SwapErrorBoundary({ children }) {
 ```typescript
 // ✅ Memoize expensive computations
 const swapParams = useMemo(() => ({
-  tokenAddress: CONTENTMENT_COIN_ADDRESS,
+  tokenAddress: USDC_ADDRESS,
   amountIn: amount,
   minAmountOut: calculateMinAmountOut(quote?.amountOut || BigInt(0), 10),
   isBuying,
