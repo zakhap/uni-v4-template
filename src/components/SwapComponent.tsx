@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import { formatEther, formatUnits } from "viem";
 import { showSwapToast } from './Toasts';
 
@@ -12,7 +12,7 @@ import {
 
 import { USDC_ADDRESS } from '../lib/constants';
 
-const SwapComponent = ({}) => {
+const SwapComponent: React.FC = () => {
   const [inputValue, setInputValue] = useState("");
   const [isBuying, setIsBuying] = useState(true);
 
@@ -54,7 +54,7 @@ const SwapComponent = ({}) => {
   const backgroundColor = '#3B82F6'; // blue-600
   const borderColor = '#2563EB'; // blue-700
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
   };
 
@@ -67,7 +67,7 @@ const SwapComponent = ({}) => {
       : BigInt(0);
 
     const swapParams = {
-      tokenAddress: USDC_ADDRESS,
+      tokenAddress: USDC_ADDRESS as `0x${string}`,
       amountIn: inputValue,
       minAmountOut,
       isBuying,

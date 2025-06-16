@@ -4,26 +4,36 @@ import { formatEther, formatUnits } from "viem";
 import { useAccount } from "wagmi";
 import { USDC_ADDRESS } from "../lib/constants";
 
-export const UserContext = createContext();
+interface UserContextType {
+  ethBalance: string;
+  tokenBalance: string;
+  loading: boolean;
+}
 
-export const UserProvider = ({ children }) => {
+export const UserContext = createContext<UserContextType | null>(null);
+
+interface UserProviderProps {
+  children: React.ReactNode;
+}
+
+export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const { address, isConnected } = useAccount();
 
   const [ethBalance, setEthBalance] = useState("0");
   const [tokenBalance, setTokenBalance] = useState("0");
   const [loading, setLoading] = useState(true);
-  const [timeout, setTimeoutState] = useState(null);
+  const [timeout, setTimeoutState] = useState<NodeJS.Timeout | null>(null);
 
   const loadUserBalance = useCallback(async () => {
-    clearTimeout(timeout);
+    if (timeout) clearTimeout(timeout);
 
     // Start new timeout in 5 seconds
     setTimeoutState(setTimeout(loadUserBalance, 5000));
 
     if (!isConnected || !address) {
       setLoading(false);
-      setEthBalance(0);
-      setTokenBalance(0);
+      setEthBalance("0");
+      setTokenBalance("0");
       return;
     }
 
@@ -33,7 +43,7 @@ export const UserProvider = ({ children }) => {
 
       const tokenBalance = await getTokenBalance(USDC_ADDRESS, address);
       // USDC has 6 decimals, not 18
-      setTokenBalance(formatUnits(tokenBalance, 6));
+      setTokenBalance(formatUnits(typeof tokenBalance === 'bigint' ? tokenBalance : BigInt(0), 6));
     } catch (error) {
       console.error("Error fetching user data:", error);
     } finally {
@@ -45,7 +55,7 @@ export const UserProvider = ({ children }) => {
     loadUserBalance();
 
     return () => {
-      clearTimeout(timeout);
+      if (timeout) clearTimeout(timeout);
     };
   }, [loadUserBalance]);
 
